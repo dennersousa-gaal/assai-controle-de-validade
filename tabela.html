@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Validade - Tabela de Produtos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <img src="logo-assai.png" alt="Assaí Atacadista" style="width: 100px; display: block; margin: 0 auto;">
+    <h1>Controle de Validade de Produtos</h1>
+    
+    <!-- Tabela de produtos -->
+    <table>
+      <thead>
+        <tr>
+          <th>Consinco</th>
+          <th>Produto</th>
+          <th>Validade</th>
+          <th>Quantidade</th>
+          <th>Sugestão</th>
+        </tr>
+      </thead>
+      <tbody id="listaProdutos">
+        <!-- As linhas dos produtos adicionados aparecerão aqui -->
+      </tbody>
+    </table>
+
+    <!-- Botão para exportar PDF -->
+    <button id="exportar-pdf">Exportar para PDF</button>
+  </div>
+
+  <!-- Importando jsPDF para exportação em PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    // Exemplo de dados para preencher a tabela (remova ou substitua pelo seu código de backend)
+    const produtos = [
+      { consinco: "12345", produto: "Carne de Sol", validade: "2024-12-20", quantidade: "10 kg", sugestao: "R$ 50,00" },
+      { consinco: "67890", produto: "Linguiça Toscana", validade: "2024-11-30", quantidade: "15 kg", sugestao: "R$ 25,00" }
+    ];
+
+    // Função para preencher a tabela com os produtos
+    function preencherTabela() {
+      const tabela = document.getElementById("listaProdutos");
+      produtos.forEach(produto => {
+        const linha = document.createElement("tr");
+        linha.innerHTML = `
+          <td>${produto.consinco}</td>
+          <td>${produto.produto}</td>
+          <td>${produto.validade}</td>
+          <td>${produto.quantidade}</td>
+          <td>${produto.sugestao}</td>
+        `;
+        tabela.appendChild(linha);
+      });
+    }
+
+    preencherTabela();
+
+    // Variável global para armazenar o base64 da logo
+    let base64Logo = '';
+
+    // Função para ler o arquivo logo.txt e carregar o base64
+    function carregarLogo() {
+      const arquivoLogo = 'logo.txt'; // Nome do arquivo logo.txt
+
+      fetch(arquivoLogo)
+        .then(response => response.text()) // Lê o conteúdo do arquivo como texto
+        .then(base64 => {
+          base64Logo = base64; // Armazena o conteúdo do base64 da logo
+        })
+        .catch(error => {
+          console.error('Erro ao carregar o arquivo logo.txt:', error);
+          alert('Erro ao carregar o arquivo logo.txt');
+        });
+    }
+
+    // Carregar a logo assim que a página for carregada
+    window.onload = carregarLogo;
+
+    // Função para exportar para PDF
+    document.getElementById("exportar-pdf").addEventListener("click", () => {
+      if (!base64Logo) {
+        alert("Logo não carregada corretamente.");
+        return;
+      }
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Adicionar logo fixa
+        const logoX = 15; // Posição X da logo
+        const logoY = 10; // Posição Y da logo
+        const logoWidth = 20; // Largura da logo
+        const logoHeight = 20; // Altura da logo
+        doc.addImage(base64Logo, 'PNG', logoX, logoY, logoWidth, logoHeight);
+
+        // Definindo o título e centralizando
+        const titulo = "Controle de Validade de Produtos";
+        const larguraTitulo = doc.getTextWidth(titulo);
+        const margemX = (doc.internal.pageSize.width - larguraTitulo) / 2;
+        doc.setFontSize(20);
+        doc.text(titulo, margemX, 20);  // Centraliza o título
+
+        // Configurando a tabela no PDF
+        let colunas = ["CONSINCO", "PRODUTO", "VALIDADE", "QUANTIDADE", "SUGESTÃO"];
+        let linhas = produtos.map(produto => [produto.consinco, produto.produto, produto.validade, produto.quantidade, produto.sugestao]);
+
+        doc.autoTable({
+          head: [colunas],
+          body: linhas,
+          startY: 30,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [255, 165, 0], // Laranja para o cabeçalho
+            textColor: 255 // Cor do texto em branco
+          },
+          bodyStyles: {
+            fillColor: [255, 204, 128], // Cor de fundo laranja mais suave
+          },
+          alternateRowStyles: {
+            fillColor: [255, 223, 153] // Cor alternada para as linhas
+          }
+        });
+
+        doc.save("controle-de-validade.pdf");
+      } catch (error) {
+        console.error("Erro ao gerar o PDF:", error);
+        alert("Ocorreu um erro ao gerar o PDF.");
+      }
+    });
+  </script>
+</body>
+</html>
